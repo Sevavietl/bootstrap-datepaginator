@@ -1,9 +1,9 @@
 /* =========================================================
  * bootstrap-datepaginator.js v1.1.0
  * =========================================================
- * Copyright 2013 Jonathan Miles 
+ * Copyright 2013 Jonathan Miles
  * Project URL : http://www.jondmiles.com/bootstrap-datepaginator
- *	
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,11 +54,15 @@
 		squareEdges: false,
 		text: 'ddd<br/>Do',
 		textSelected: 'dddd<br/>Do, MMMM YYYY',
+		useBootstrap2: false,
 		width: 0,
 		startDate: moment(new Date(-8640000000000000)),
 		startDateFormat: 'YYYY-MM-DD',
 		endDate: moment(new Date(8640000000000000)),
-		endDateFormat: 'YYYY-MM-DD'
+		endDateFormat: 'YYYY-MM-DD',
+		// My changes: sevavietl
+		startWithSelected: false,
+		numberOfDaysToShow: 5,
 	};
 
 	DatePaginator.prototype = {
@@ -99,7 +103,7 @@
 				this.options.endDate = moment(this.options.endDate, this.options.endDateFormat).clone().startOf('day');
 			}
 
-			// Parse, set and validate the initially selected date 
+			// Parse, set and validate the initially selected date
 			// 1. overridding the default value of today
 			if (typeof this.options.selectedDate === 'string') {
 				this.options.selectedDate = moment(this.options.selectedDate, this.options.selectedDateFormat).clone().startOf('day');
@@ -225,6 +229,7 @@
 
 				// Setup first time only components, reused on later _renders
 				this.$element
+					.addClass(this.options.useBootstrap2 ? 'pagination' : '')
 					.removeClass('datepaginator datepaginator-sm datepaginator-lg')
 					.addClass(this.options.size === 'sm' ? 'datepaginator-sm' : this.options.size === 'lg' ? 'datepaginator-lg' : 'datepaginator');
 				this.$wrapper = $(this._template.list);
@@ -347,13 +352,27 @@
 		_buildData: function() {
 
 			var viewWidth = (this.options.width - ((this.options.selectedItemWidth - this.options.itemWidth) + (this.options.navItemWidth * 2))),
-				units = Math.floor(viewWidth / this.options.itemWidth),
-				unitsPerSide = parseInt(units / 2),
-				adjustedItemWidth = Math.floor(viewWidth / units),
+				units = Math.floor(viewWidth / this.options.itemWidth);
+
+			if (this.options.startWithSelected) {
+				var tmpWidth = this.options.selectedItemWidth + this.options.numberOfDaysToShow * this.options.itemWidth;
+
+				if (viewWidth <= 0 || viewWidth >= tmpWidth) {
+					viewWidth = tmpWidth;
+					units = this.options.numberOfDaysToShow + 1;
+				}
+
+				var start = this.options.selectedDate.clone(),
+					end = this.options.selectedDate.clone().add('days', units);
+			} else {
+				var unitsPerSide = parseInt(units / 2),
+					start = this.options.selectedDate.clone().subtract('days', unitsPerSide),
+					end = this.options.selectedDate.clone().add('days', (units - unitsPerSide));
+			}
+
+			var	adjustedItemWidth = Math.floor(viewWidth / units),
 				adjustedSelectedItemWidth = Math.floor(this.options.selectedItemWidth + (viewWidth - (units * adjustedItemWidth))),
-				today = moment().startOf('day'),
-				start = this.options.selectedDate.clone().subtract('days', unitsPerSide),
-				end = this.options.selectedDate.clone().add('days', (units - unitsPerSide));
+				today = moment().startOf('day');
 
 			var data = {
 				isSelectedStartDate: this.options.selectedDate.isSame(this.options.startDate) ? true : false,
@@ -365,7 +384,7 @@
 
 				var valid = ((m.isSame(this.options.startDate) || m.isAfter(this.options.startDate)) &&
 							(m.isSame(this.options.endDate) || m.isBefore(this.options.endDate))) ? true : false;
-				
+
 				data.items[data.items.length] = {
 					m: m.clone().format(this.options.selectedDateFormat),
 					isValid: valid,
